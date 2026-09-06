@@ -1,0 +1,203 @@
+// Prisma Schema for WardAlert Sentinel - Smart Alert-Fatigue Analyzer
+// Database: SQLite
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Patient {
+  id                 String         @id // e.g. "P014"
+  bed                String         // e.g. "Bed 14"
+  age                Int
+  gender             String         // "M", "F", "Other"
+  syntheticDiagnosis String
+  riskLevel          String         // "CRITICAL", "HIGH", "MODERATE", "LOW"
+  admissionTime      DateTime       @default(now())
+  baselineHR         Int            @default(75)
+  baselineBPSys      Int            @default(120)
+  baselineBPDia      Int            @default(80)
+  baselineSpO2       Float          @default(98.0)
+  baselineRR         Int            @default(16)
+  baselineTemp       Float          @default(36.8)
+  observations       Observation[]
+  alerts             Alert[]
+  episodes           AlertEpisode[]
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+}
+
+model Observation {
+  id              String   @id @default(uuid())
+  patientId       String
+  patient         Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  timestamp       DateTime @default(now())
+  heartRate       Int?
+  bpSys           Int?
+  bpDia           Int?
+  spO2            Float?
+  respiratoryRate Int?
+  temperature     Float?
+  glucose         Float?
+  painScore       Int?
+  deviceStatus    String   @default("NORMAL") // "NORMAL", "POOR_SIGNAL", "DETACHED", "DISCONNECTED"
+  createdAt       DateTime @default(now())
+}
+
+model AlertEpisode {
+  id                    String    @id @default(uuid()) // e.g. "EP-084"
+  patientId             String
+  patient               Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  alertType             String    // "LOW_SPO2", "HYPOTENSION", "TACHYCARDIA", etc.
+  startTime             DateTime  @default(now())
+  endTime               DateTime?
+  alertCount            Int       @default(1)
+  status                String    @default("ACTIVE") // "ACTIVE", "RESOLVED", "BROKEN_OUT"
+  representativeAlertId String?
+  breakoutReason        String?
+  alerts                Alert[]
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+
+model Alert {
+  id                       String              @id // e.g. "ALT-10492"
+  patientId                String
+  patient                  Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  timestamp                DateTime            @default(now())
+  alertType                String              // "LOW_SPO2", "HYPOTENSION", "TACHYCARDIA", "BRADYCARDIA", "TACHYPNEA", "HYPERTHERMIA", etc.
+  source                   String              @default("Bedside Monitor")
+  severity                 String              // "P0", "P1", "P2", "P3"
+  observedValue            Float
+  referenceRange           String              // e.g. "95-100%", "90-120 mmHg"
+  deviation                String              // e.g. "-8% in 15 min"
+  context                  String              // Additional clinical context
+  episodeId                String?
+  episode                  AlertEpisode?       @relation(fields: [episodeId], references: [id])
+  groundTruthPriority      String              // "P0", "P1", "P2", "P3"
+  groundTruthActionability String              // "A1", "A0"
+  clinicianResponse        String              @default("UNACKNOWLEDGED") // "UNACKNOWLEDGED", "ACKNOWLEDGED", "REVIEWED", "ACTED", "SNOOZED", "DISMISSED", "OVERRIDDEN", "ESCALATED"
+  overrideStatus           Boolean             @default(false)
+  responseTimestamp        DateTime?
+  outcome                  String?             // Clinical outcome after response
+  resolutionTimestamp      DateTime?
+  evidenceJson             String?             // Stored JSON representation of clinical evidence
+  responses                ClinicianResponse[]
+  overrides                Override[]
+  outcomes                 Outcome[]
+  auditLogs                AuditLog[]
+  createdAt                DateTime            @default(now())
+  updatedAt                DateTime            @updatedAt
+}
+
+model ClinicianResponse {
+  id                  String    @id @default(uuid())
+  alertId             String
+  alert               Alert     @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  clinicianRole       String    // "Nurse", "Doctor", "Charge Nurse", "Researcher", "Administrator"
+  action              String    // "ACKNOWLEDGE", "REVIEW", "ACT", "SNOOZE", "DISMISS", "OVERRIDE", "ESCALATE"
+  overrideReason      String?
+  timestamp           DateTime  @default(now())
+  responseTimeSeconds Int?      @default(0)
+}
+
+model Override {
+  id             String   @id @default(uuid())
+  alertId        String
+  alert          Alert    @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  clinicianRole  String
+  previousStatus String
+  newStatus      String
+  overrideReason String
+  timestamp      DateTime @default(now())
+}
+
+model Outcome {
+  id              String   @id @default(uuid())
+  alertId         String
+  alert           Alert    @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  outcomeType     String   // "RESOLVED_SAFE", "RRT_DISPATCHED", "MEDICATION_ADJUSTED", "FALSE_ALARM", "MONITOR_CALIBRATED"
+  notes           String?
+  resolvedByRole  String
+  timestamp       DateTime @default(now())
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  name      String
+  roleName  String   // "Nurse", "Doctor", "Charge Nurse", "Researcher", "Administrator"
+  role      Role     @relation(fields: [roleName], references: [name])
+  createdAt DateTime @default(now())
+}
+
+model Role {
+  name        String   @id // "Nurse", "Doctor", "Charge Nurse", "Researcher", "Administrator"
+  description String
+  permissions String   // JSON string of permissions
+  users       User[]
+}
+
+model Consent {
+  id          String   @id @default(uuid())
+  userId      String?
+  ipAddress   String?
+  acceptedAt  DateTime @default(now())
+  consentText String
+  version     String   @default("1.0")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  timestamp DateTime @default(now())
+  user      String   @default("System")
+  role      String   @default("System")
+  action    String   // e.g. "ESCALATE_ALERT", "OVERRIDE_ALERT", "GROUP_ALERTS", "CHANGE_SETTING", "RUN_EXPERIMENT"
+  alertId   String?
+  alert     Alert?   @relation(fields: [alertId], references: [id], onDelete: SetNull)
+  reason    String?
+  details   String?  // JSON string
+}
+
+model Experiment {
+  id                 String             @id @default(uuid())
+  name               String
+  description        String?
+  patientCount       Int                @default(28)
+  simulationDuration Int                @default(24) // hours
+  alertVolume        Int                @default(2430)
+  randomSeed         Int                @default(42)
+  groupingWindowMins Int                @default(15)
+  thresholdConfig    String?            // JSON string
+  createdAt          DateTime           @default(now())
+  results            ExperimentResult[]
+}
+
+model ExperimentResult {
+  id                       String     @id @default(uuid())
+  experimentId             String
+  experiment               Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+  baselineAlerts           Int
+  analyserAlerts           Int
+  baselineNonActionable    Int
+  analyserNonActionable    Int
+  nonActionableReductionPct Float
+  highPrioritySensitivity  Float
+  precision                Float
+  recall                   Float
+  f1Score                  Float
+  falsePositives           Int
+  falseNegatives           Int
+  medianResponseTimeSec    Int
+  overrideRate             Float
+  reductionTargetMet       Boolean    @default(true)
+  sensitivityTargetMet     Boolean    @default(true)
+  fpTargetMet              Boolean    @default(true)
+  allTargetsMet            Boolean    @default(true)
+  confusionMatrixJson      String?    // JSON string
+  createdAt                DateTime   @default(now())
+}
