@@ -10,6 +10,7 @@ import { EvidenceModal } from './components/modals/EvidenceModal';
 import { ActionModal } from './components/modals/ActionModal';
 import { ConsentModal } from './components/modals/ConsentModal';
 import { DemoModal } from './components/modals/DemoModal';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 // Pages
 import { DashboardPage } from './pages/DashboardPage';
@@ -27,6 +28,8 @@ import { SettingsPage } from './pages/SettingsPage';
 import { UserGuidePage } from './pages/UserGuidePage';
 import { ConsentPage } from './pages/ConsentPage';
 import { RoleSelectionPage } from './pages/RoleSelectionPage';
+import { HowAlertGroupingWorksPage } from './pages/HowAlertGroupingWorksPage';
+import { HighPriorityMissAnalysisPage } from './pages/HighPriorityMissAnalysisPage';
 
 export const App: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -64,32 +67,38 @@ export const App: React.FC = () => {
 
                 {/* Main Scrollable Canvas */}
                 <div className="flex-1 p-4 sm:p-6 md:p-8">
-                  <Routes>
-                    <Route path="/" element={<DashboardPage />} />
-                    <Route path="/alerts" element={<LiveAlertsPage />} />
-                    <Route path="/patients" element={<PatientsPage />} />
-                    <Route path="/episodes" element={<AlertEpisodesPage />} />
-                    <Route path="/episodes/:id" element={<AlertEpisodesPage />} />
-                    <Route path="/fatigue" element={<AlertFatiguePage />} />
-                    <Route path="/before-after" element={<BeforeVsAfterPage />} />
-                    <Route path="/error-analysis" element={<ErrorAnalysisPage />} />
-                    <Route path="/experiments" element={<ExperimentsPage />} />
-                    <Route path="/critical" element={<CriticalAlertsPage />} />
-                    <Route path="/audit" element={<AuditLogPage />} />
-                    <Route path="/edge-cases" element={<EdgeCasesPage />} />
-                    <Route path="/settings" element={<SettingsPage />} />
-                    <Route path="/guide" element={<UserGuidePage />} />
-                    <Route path="/consent" element={<ConsentPage />} />
-                    <Route path="/roles" element={<RoleSelectionPage />} />
-                  </Routes>
+                  <ErrorBoundary fallbackTitle="View Rendering Error" fallbackMessage="An error occurred while loading this clinical page. You can switch to another section using the sidebar or retry.">
+                    <Routes>
+                      <Route path="/" element={<DashboardPage />} />
+                      <Route path="/alerts" element={<LiveAlertsPage />} />
+                      <Route path="/patients" element={<PatientsPage />} />
+                      <Route path="/episodes" element={<AlertEpisodesPage />} />
+                      <Route path="/episodes/:id" element={<AlertEpisodesPage />} />
+                      <Route path="/grouping-logic" element={<HowAlertGroupingWorksPage />} />
+                      <Route path="/fatigue" element={<AlertFatiguePage />} />
+                      <Route path="/before-after" element={<BeforeVsAfterPage />} />
+                      <Route path="/error-analysis" element={<ErrorAnalysisPage />} />
+                      <Route path="/miss-analysis" element={<HighPriorityMissAnalysisPage />} />
+                      <Route path="/experiments" element={<ExperimentsPage />} />
+                      <Route path="/critical" element={<CriticalAlertsPage />} />
+                      <Route path="/audit" element={<AuditLogPage />} />
+                      <Route path="/edge-cases" element={<EdgeCasesPage />} />
+                      <Route path="/settings" element={<SettingsPage />} />
+                      <Route path="/guide" element={<UserGuidePage />} />
+                      <Route path="/consent" element={<ConsentPage />} />
+                      <Route path="/roles" element={<RoleSelectionPage />} />
+                    </Routes>
+                  </ErrorBoundary>
                 </div>
               </div>
 
-              {/* Global Interactive Modals */}
-              <EvidenceModal />
-              <ActionModal />
-              <ConsentModal />
-              <DemoModal />
+              {/* Global Interactive Modals with Error Isolation */}
+              <ErrorBoundary fallbackTitle="Modal Display Error">
+                <EvidenceModal />
+                <ActionModal />
+                <ConsentModal />
+                <DemoModal />
+              </ErrorBoundary>
             </div>
           </AlertProvider>
         </ViewProvider>

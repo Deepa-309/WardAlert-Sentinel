@@ -16,6 +16,7 @@ export interface ExperimentParams {
   randomSeed: number;
   groupingWindowMins: number;
   thresholds?: ThresholdConfig;
+  enableSafetyBreakout?: boolean;
 }
 
 export interface ExperimentExecutionResult {
@@ -30,8 +31,9 @@ export function runExperiment(params: ExperimentParams): ExperimentExecutionResu
   const patientCount = Math.min(Math.max(params.patientCount || 28, 10), 50);
   const alertVolume = Math.min(Math.max(params.alertVolume || 2430, 100), 10000);
   const seed = params.randomSeed || 42;
-  const groupingWindow = params.groupingWindowMins || 15;
+  const groupingWindow = params.groupingWindowMins || 10;
   const thresholds = params.thresholds || DEFAULT_THRESHOLDS;
+  const enableSafetyBreakout = params.enableSafetyBreakout ?? true;
 
   // 1. Generate synthetic cohort
   const patients = generateWardPatients(patientCount, seed);
@@ -46,7 +48,8 @@ export function runExperiment(params: ExperimentParams): ExperimentExecutionResu
   const analyser = runAlertFatigueAnalyser(rawAlerts, {
     microWindowSeconds: 60,
     groupingWindowMinutes: groupingWindow,
-    thresholds
+    thresholds,
+    enableSafetyBreakout
   });
 
   // 5. Evaluate comparative performance

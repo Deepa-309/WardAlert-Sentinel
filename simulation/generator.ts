@@ -54,7 +54,10 @@ export interface SyntheticAlert {
   evidenceJson?: string;
 }
 
-// Simple Mulberry32 PRNG for reproducible seeds
+// DETERMINISTIC PSEUDORANDOM GENERATOR (Mulberry32):
+// Generates reproducible 32-bit pseudo-random sequences from a fixed integer seed.
+// This is critical for academic reproducibility and regression testing: benchmark runs with seed=42
+// always produce identical patient vitals, alert distributions, and confusion matrices across different machines.
 function mulberry32(a: number) {
   return function () {
     let t = (a += 0x6d2b79f5);
@@ -328,6 +331,10 @@ export function generateWardAlertStream(
         observedValue = parseFloat((38.2 + rand() * 1.5).toFixed(1));
         dev = `↑ ${observedValue} °C`;
         break;
+      // MISSING DATA & HARDWARE DISCONNECTION MODELING:
+      // When an electrode lead or pulse oximeter slips, telemetry receives no valid biometric signal.
+      // Rather than synthesizing an arrest (e.g. Asystole / 0% SpO2), the system emits a LEAD_OFF technical advisory (P3).
+      // This distinguishes equipment displacement from genuine physiological collapse.
       case 'LEAD_OFF':
         refRange = 'Signal OK';
         observedValue = 0;

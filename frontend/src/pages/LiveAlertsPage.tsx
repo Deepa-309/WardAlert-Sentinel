@@ -16,7 +16,64 @@ import {
 } from 'lucide-react';
 import { useAlerts } from '../context/AlertContext';
 import { useAuth } from '../context/AuthContext';
+import { useView } from '../context/ViewContext';
 import { Alert } from '../types';
+
+// Plain language clinical explanations for Simple View
+function getSimpleViewText(alert: Alert) {
+  const isP0 = alert.severity === 'P0';
+  const isP1 = alert.severity === 'P1';
+
+  let tierLabel = 'MODERATE';
+  if (isP0) tierLabel = 'CRITICAL';
+  else if (isP1) tierLabel = 'HIGH';
+
+  switch (alert.alertType) {
+    case 'LOW_SPO2':
+      return {
+        tier: tierLabel,
+        headline: isP0 ? 'Oxygen level is dangerously low.' : 'Oxygen level is lower than normal.',
+        action: 'Immediate review needed.'
+      };
+    case 'HYPOTENSION':
+      return {
+        tier: tierLabel,
+        headline: isP0 ? 'Blood pressure is critically low.' : 'Blood pressure is lower than normal.',
+        action: 'Immediate clinical review needed.'
+      };
+    case 'TACHYCARDIA':
+      return {
+        tier: tierLabel,
+        headline: isP0 ? 'Heart rate is dangerously fast.' : 'Heart rate is elevated.',
+        action: 'Bedside assessment required.'
+      };
+    case 'BRADYCARDIA':
+      return {
+        tier: tierLabel,
+        headline: isP0 ? 'Heart rate is dangerously slow.' : 'Heart rate is lower than normal.',
+        action: 'Immediate rhythm check needed.'
+      };
+    case 'TACHYPNEA':
+      return {
+        tier: tierLabel,
+        headline: isP0 ? 'Breathing rate is dangerously fast.' : 'Breathing rate is elevated.',
+        action: 'Respiratory review needed.'
+      };
+    case 'HYPERTHERMIA':
+      return {
+        tier: tierLabel,
+        headline: 'Body temperature is dangerously high.',
+        action: 'Cooling and clinical review needed.'
+      };
+    case 'LEAD_OFF':
+    default:
+      return {
+        tier: 'MODERATE',
+        headline: 'Sensor or lead has detached.',
+        action: 'Please reconnect sensor to patient.'
+      };
+  }
+}
 
 export const LiveAlertsPage: React.FC = () => {
   const { getAuthHeaders, isActionPermitted, role } = useAuth();
@@ -70,6 +127,8 @@ export const LiveAlertsPage: React.FC = () => {
     openActionModal(alert, action);
   };
 
+  const { simpleView, toggleSimpleView } = useView();
+
   return (
     <div className="space-y-6 max-w-[1600px] mx-auto">
       {/* Header */}
@@ -80,19 +139,44 @@ export const LiveAlertsPage: React.FC = () => {
               <Bell className="w-5 h-5" />
             </div>
             <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
-              Live Ward Telemetry Alerts
+              {simpleView ? 'Ward Alerts (Simple View)' : 'Live Ward Telemetry Alerts'}
             </h1>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Real-time feed of ingested physiological alarms with automated deduplication and priority triage.
+            {simpleView
+              ? 'High-contrast uncluttered cards with plain language and one-click actions.'
+              : 'Real-time feed of ingested physiological alarms with automated deduplication and priority triage.'}
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-slate-500">Total Active:</span>
-          <span className="text-xs font-black px-2.5 py-1 rounded-full bg-[#8B1E2F] text-white">
-            {total || alerts.length} alerts
-          </span>
+        <div className="flex items-center gap-3">
+          {/* Quick Simple View Switch Button */}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={simpleView}
+            id="toggle-simple-view-btn"
+            onClick={toggleSimpleView}
+            className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer ${
+              simpleView
+                ? 'bg-[#8B1E2F] text-white border-[#8B1E2F]'
+                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <span>Simple View</span>
+            <span className={`text-[0.65rem] px-1.5 py-0.2 rounded font-extrabold ${
+              simpleView ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+            }`}>
+              {simpleView ? 'ON' : 'OFF'}
+            </span>
+          </button>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-500">Total Active:</span>
+            <span className="text-xs font-black px-2.5 py-1 rounded-full bg-[#8B1E2F] text-white">
+              {total || alerts.length} alerts
+            </span>
+          </div>
         </div>
       </div>
 
@@ -135,9 +219,115 @@ export const LiveAlertsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Alerts Table */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+      {/* Conditional View: Simple View (High-Contrast Large Cards) vs Standard Table */}
+      {simpleView ? (
+        <div className="space-y-4" role="region" aria-label="Simple View Alerts Feed">
+          {loading && alerts.length === 0 ? (
+            <div className="bg-white rounded-2xl p-12 text-center text-slate-400 font-bold text-base">
+              Loading alerts in Simple View...
+            </div>
+          ) : alerts.length === 0 ? (
+            <div className="bg-white rounded-2xl p-12 text-center text-slate-500 font-bold text-base">
+              No active alerts matching filter.
+            </div>
+          ) : (
+            alerts.map((alert) => {
+              const textInfo = getSimpleViewText(alert);
+              const isP0 = alert.severity === 'P0';
+              const isP1 = alert.severity === 'P1';
+
+              return (
+                <div
+                  key={alert.id}
+                  tabIndex={0}
+                  aria-label={`${textInfo.tier} Alert for Patient ${alert.patientId}: ${textInfo.headline} ${textInfo.action}`}
+                  className={`p-6 rounded-3xl border shadow-sm transition-all focus:outline-none focus:ring-4 focus:ring-[#8B1E2F] ${
+                    isP0
+                      ? 'bg-rose-50/60 border-red-300 ring-2 ring-red-400'
+                      : isP1
+                      ? 'bg-amber-50/50 border-amber-300'
+                      : 'bg-white border-slate-200'
+                  }`}
+                >
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-2 flex-1">
+                      {/* Priority Badge */}
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`text-xs font-black px-3 py-1 rounded-lg uppercase tracking-wider ${
+                            isP0
+                              ? 'bg-red-600 text-white shadow-sm animate-pulse'
+                              : isP1
+                              ? 'bg-amber-600 text-white shadow-sm'
+                              : 'bg-slate-700 text-white'
+                          }`}
+                        >
+                          {textInfo.tier}
+                        </span>
+                        <span className="text-base font-black text-slate-900">
+                          Patient {alert.patientId} • {alert.patient?.bed || 'Ward Bed'}
+                        </span>
+                      </div>
+
+                      {/* Plain Language Headline & Action */}
+                      <div className="text-lg md:text-xl font-black text-slate-900 leading-snug">
+                        {textInfo.headline}
+                      </div>
+                      <div className="text-sm font-bold text-slate-600">
+                        {textInfo.action}
+                      </div>
+
+                      {/* Vital context */}
+                      <div className="text-xs font-semibold text-slate-500 flex items-center gap-3 pt-1">
+                        <span>Current: <strong>{alert.observedValue} ({alert.referenceRange})</strong></span>
+                        <span>•</span>
+                        <span>Time: <strong>{new Date(alert.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</strong></span>
+                      </div>
+                    </div>
+
+                    {/* Direct 1-Click Action Buttons */}
+                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
+                      <button
+                        type="button"
+                        id={`simple-btn-evidence-${alert.id}`}
+                        onClick={() => openEvidenceModal(alert)}
+                        className="px-4 py-3 bg-white hover:bg-slate-100 text-slate-800 font-extrabold text-sm rounded-xl border border-slate-300 shadow-xs transition-all min-h-[48px] focus:outline-none focus:ring-2 focus:ring-[#8B1E2F]"
+                      >
+                        Evidence
+                      </button>
+
+                      {isP0 && isActionPermitted('ESCALATE') ? (
+                        <button
+                          type="button"
+                          id={`simple-btn-escalate-${alert.id}`}
+                          onClick={() => handleAction(alert, 'ESCALATE')}
+                          className="px-6 py-3 bg-[#8B1E2F] hover:bg-[#70121F] text-white font-black text-sm rounded-xl shadow-md transition-all min-h-[48px] flex items-center gap-2 focus:outline-none focus:ring-4 focus:ring-red-400"
+                        >
+                          <Siren className="w-5 h-5" />
+                          <span>Escalate Now</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          id={`simple-btn-ack-${alert.id}`}
+                          onClick={() => handleAction(alert, 'ACKNOWLEDGE')}
+                          className="px-6 py-3 bg-slate-800 hover:bg-slate-900 text-white font-black text-sm rounded-xl shadow-md transition-all min-h-[48px] flex items-center gap-2 focus:outline-none focus:ring-4 focus:ring-slate-400"
+                        >
+                          <CheckCircle className="w-5 h-5" />
+                          <span>Acknowledge</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      ) : (
+        /* Alerts Table (Standard View) */
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold uppercase text-[0.68rem] tracking-wider">
               <tr>
@@ -359,6 +549,7 @@ export const LiveAlertsPage: React.FC = () => {
           </table>
         </div>
       </div>
+      )}
     </div>
   );
 };

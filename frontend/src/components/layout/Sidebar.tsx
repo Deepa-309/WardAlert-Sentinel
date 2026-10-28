@@ -71,13 +71,15 @@ export const Sidebar: React.FC<{
             items: [
               { name: 'Live Alerts', path: '/alerts', icon: Bell, badge: totalAlertsCount },
               { name: 'Patients', path: '/patients', icon: Users },
-              { name: 'Alert Episodes', path: '/episodes', icon: Layers }
+              { name: 'Alert Episodes', path: '/episodes', icon: Layers },
+              { name: 'Grouping Logic', path: '/grouping-logic', icon: Workflow }
             ]
           },
           {
             title: 'EMERGENCY SAFETY',
             items: [
-              { name: 'Critical Alerts', path: '/critical', icon: AlertTriangle, badge: activeCriticalCount }
+              { name: 'Critical Alerts', path: '/critical', icon: AlertTriangle, badge: activeCriticalCount },
+              { name: 'Miss Analysis', path: '/miss-analysis', icon: Target }
             ]
           },
           {
@@ -96,7 +98,8 @@ export const Sidebar: React.FC<{
             items: [
               { name: 'Experiments', path: '/experiments', icon: FlaskConical },
               { name: 'Before vs After', path: '/before-after', icon: ArrowLeftRight },
-              { name: 'Error Analysis', path: '/error-analysis', icon: Target }
+              { name: 'Error Analysis', path: '/error-analysis', icon: Target },
+              { name: 'Miss Analysis', path: '/miss-analysis', icon: Target }
             ]
           },
           {
@@ -140,7 +143,8 @@ export const Sidebar: React.FC<{
             items: [
               { name: 'Live Alerts', path: '/alerts', icon: Bell, badge: totalAlertsCount },
               { name: 'Patients', path: '/patients', icon: Users },
-              { name: 'Alert Episodes', path: '/episodes', icon: Layers }
+              { name: 'Alert Episodes', path: '/episodes', icon: Layers },
+              { name: 'Grouping Logic', path: '/grouping-logic', icon: Workflow }
             ]
           },
           {
@@ -154,6 +158,7 @@ export const Sidebar: React.FC<{
             title: 'SAFETY',
             items: [
               { name: 'Critical Alerts', path: '/critical', icon: AlertTriangle, badge: activeCriticalCount },
+              { name: 'Miss Analysis', path: '/miss-analysis', icon: Target },
               { name: 'Audit Log', path: '/audit', icon: FileText },
               { name: 'Edge Cases', path: '/edge-cases', icon: Workflow }
             ]

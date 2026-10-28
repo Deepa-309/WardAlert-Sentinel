@@ -7,6 +7,7 @@ import { GroupedAlertsSection } from '../components/dashboard/GroupedAlertsSecti
 import { WardAlertSummary } from '../components/dashboard/WardAlertSummary';
 import { ClinicianResponseSection } from '../components/dashboard/ClinicianResponseSection';
 import { RightSafetyPanel } from '../components/layout/RightSafetyPanel';
+import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 export const DashboardPage: React.FC = () => {
   return (
@@ -14,26 +15,40 @@ export const DashboardPage: React.FC = () => {
       {/* Primary Dashboard Area */}
       <main className="flex-1 w-full space-y-6" id="main-dashboard-content">
         {/* RED SUMMARY HERO CARD (No greetings, purely alert metrics) */}
-        <HeroSummary />
+        <ErrorBoundary fallbackTitle="Hero Summary Unavailable">
+          <HeroSummary />
+        </ErrorBoundary>
 
         {/* ROW 1: Critical Alerts (Left) + Alert Fatigue Overview (Right) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-          <CriticalAlertsSection />
-          <AlertFatigueOverview />
+          <ErrorBoundary fallbackTitle="Critical Alerts Unavailable">
+            <CriticalAlertsSection />
+          </ErrorBoundary>
+          <ErrorBoundary fallbackTitle="Alert Fatigue Overview Unavailable">
+            <AlertFatigueOverview />
+          </ErrorBoundary>
         </div>
 
         {/* ROW 2: Grouped Repetitive Alerts (Left) + Ward Alert Summary (Right) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-          <GroupedAlertsSection />
-          <WardAlertSummary />
+          <ErrorBoundary fallbackTitle="Grouped Alerts Unavailable">
+            <GroupedAlertsSection />
+          </ErrorBoundary>
+          <ErrorBoundary fallbackTitle="Ward Alert Summary Unavailable">
+            <WardAlertSummary />
+          </ErrorBoundary>
         </div>
 
         {/* ROW 3: Clinician Response (Today) */}
-        <ClinicianResponseSection />
+        <ErrorBoundary fallbackTitle="Clinician Response Metrics Unavailable">
+          <ClinicianResponseSection />
+        </ErrorBoundary>
       </main>
 
       {/* Right Safety Information Column (~300px) */}
-      <RightSafetyPanel />
+      <ErrorBoundary fallbackTitle="Safety Information Panel Unavailable">
+        <RightSafetyPanel />
+      </ErrorBoundary>
     </div>
   );
 };

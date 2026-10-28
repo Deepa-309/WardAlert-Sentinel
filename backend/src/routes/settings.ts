@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 // In-memory active configuration
 let activeSettings = {
   thresholds: { ...DEFAULT_THRESHOLDS },
-  groupingWindowMinutes: 15,
+  groupingWindowMinutes: 10,
   microWindowSeconds: 60,
   hysteresisDeadbandPct: 1.5,
   disclaimer: 'Synthetic demonstration thresholds — not clinically validated.'
@@ -74,7 +74,7 @@ router.post('/reset', requireRole(['Administrator']), async (req: AuthenticatedR
   try {
     activeSettings = {
       thresholds: { ...DEFAULT_THRESHOLDS },
-      groupingWindowMinutes: 15,
+      groupingWindowMinutes: 10,
       microWindowSeconds: 60,
       hysteresisDeadbandPct: 1.5,
       disclaimer: 'Synthetic demonstration thresholds — not clinically validated.'

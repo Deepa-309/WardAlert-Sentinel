@@ -16,17 +16,37 @@ router.get('/latest', async (req: AuthenticatedRequest, res: Response) => {
     });
 
     if (!result) {
+      const liveExp = runExperiment({
+        name: 'Default Ward Telemetry Run',
+        patientCount: 28,
+        simulationDuration: 24,
+        alertVolume: 2430,
+        randomSeed: 42,
+        groupingWindowMins: 10
+      });
+
       return res.json({
-        baselineAlerts: 2430,
-        analyserAlerts: 1140,
-        reductionPct: 63.0,
-        sensitivityPct: 98.9,
-        targetMet: true,
-        precision: 91.4,
-        recall: 98.9,
-        f1Score: 95.0,
-        falsePositives: 18,
-        falseNegatives: 2
+        result: {
+          baselineAlerts: liveExp.metrics.totalBaselineAlerts,
+          analyserAlerts: liveExp.metrics.totalAnalyserAlerts,
+          nonActionableReductionPct: liveExp.metrics.nonActionableReductionPct,
+          highPrioritySensitivity: liveExp.metrics.highPrioritySensitivity,
+          precision: liveExp.metrics.precision,
+          recall: liveExp.metrics.recall,
+          f1Score: liveExp.metrics.f1Score,
+          falsePositives: liveExp.metrics.falsePositives,
+          falseNegatives: liveExp.metrics.falseNegatives,
+          medianResponseTimeSec: liveExp.metrics.analyserMedianResponseSec,
+          reductionTargetMet: liveExp.metrics.reductionTargetMet,
+          sensitivityTargetMet: liveExp.metrics.sensitivityTargetMet,
+          fpTargetMet: liveExp.metrics.fpTargetMet,
+          allTargetsMet: liveExp.metrics.allTargetsMet
+        },
+        targets: {
+          nonActionableReduction: { target: 40.0, measured: liveExp.metrics.nonActionableReductionPct, status: liveExp.metrics.reductionTargetMet ? 'PASS' : 'FAIL' },
+          highPrioritySensitivity: { target: 95.0, measured: liveExp.metrics.highPrioritySensitivity, status: liveExp.metrics.sensitivityTargetMet ? 'PASS' : 'FAIL' },
+          falsePositiveControl: { target: 10.0, measured: parseFloat(((liveExp.metrics.falsePositives / liveExp.metrics.totalBaselineAlerts) * 100).toFixed(1)), status: liveExp.metrics.fpTargetMet ? 'PASS' : 'FAIL' }
+        }
       });
     }
 
@@ -67,7 +87,7 @@ router.post('/run', async (req: AuthenticatedRequest, res: Response) => {
       simulationDuration = 24,
       alertVolume = 2430,
       randomSeed = 42,
-      groupingWindowMins = 15,
+      groupingWindowMins = 10,
       thresholds
     } = req.body;
 

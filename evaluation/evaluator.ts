@@ -43,7 +43,15 @@ export function evaluatePerformance(
 ): DetailedEvaluationMetrics {
   const presentedSet = new Set(analyser.presentedAlerts.map(a => a.id));
 
-  // Binary classification evaluation where Positive = Actionable (A1), Negative = Non-actionable (A0)
+  // STATISTICAL EVALUATION FORMULATION:
+  // In alarm-fatigue literature, clinical telemetry alarms are partitioned into:
+  // - Actionable (A1 / Positive): Clinical intervention required (medication, oxygen adjustment, doctor review).
+  // - Non-Actionable (A0 / Negative): Transient motion artifacts, false triggers, chronic stable deviations.
+  //
+  // True Positive (TP): Actionable event correctly elevated as P0/P1 high-priority.
+  // False Positive (FP): Non-actionable event unnecessarily escalated to P0/P1, causing alarm fatigue.
+  // False Negative (FN): Actionable emergency suppressed, grouped, or misclassified as P2/P3 (SAFETY CRITICAL HAZARD).
+  // True Negative (TN): Non-actionable nuisance alert correctly grouped into an episode or suppressed.
   let tp = 0;
   let fp = 0;
   let fn = 0;
@@ -90,9 +98,12 @@ export function evaluatePerformance(
     const predActCol = predActionable ? 'A1 (Actionable)' : 'A0 (Non-actionable)';
     actionabilityMatrix.matrix[gtActRow][predActCol]++;
 
-    // Update priority confusion matrix
+    // PRIORITY CONFUSION MATRIX MAPPING:
+    // When an alert is absorbed into a grouped episode or deduplicated, it no longer triggers
+    // an active audible or visual interruption. In the confusion matrix, its effective cognitive
+    // impact maps to 'P3' (low advisory/quiescent status).
     const gtP = raw.groundTruthPriority;
-    const predP = isPresented ? raw.severity : 'P3'; // grouped/suppressed maps to low interruption
+    const predP = isPresented ? raw.severity : 'P3';
     if (priorityMatrix.matrix[gtP] && priorityMatrix.matrix[gtP][predP] !== undefined) {
       priorityMatrix.matrix[gtP][predP]++;
     }

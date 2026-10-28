@@ -29,7 +29,9 @@ export function runEvaluatorTests(): Array<{ name: string; passed: boolean; deta
     groupedCount: 147,
     breakouts: [],
     nonActionableReductionPct: 63.0,
-    highPrioritySensitivity: 98.9
+    highPrioritySensitivity: 98.9,
+    safetyBreakoutApplied: true,
+    rescuedFalseNegativesCount: 0
   };
 
   const metrics = evaluatePerformance(baselineMock, analyserMock);

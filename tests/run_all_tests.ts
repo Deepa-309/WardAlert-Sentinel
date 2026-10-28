@@ -3,6 +3,7 @@ import { runSafetyCriticalTest } from './safety_critical.test';
 import { runAnalyserTests } from './analyser.test';
 import { runRBACTests } from './rbac.test';
 import { runEvaluatorTests } from './evaluator.test';
+import { runErrorBoundaryTests } from './error_boundary.test';
 
 async function runAll() {
   console.log('================================================================');
@@ -74,8 +75,24 @@ async function runAll() {
   }
   console.log('');
 
-  // 5. END-TO-END API & LIVE SERVICE INTEGRATION TESTS
-  console.log('>>> 5. END-TO-END API & LIVE SERVICE INTEGRATION TESTS <<<');
+  // 5. ERROR BOUNDARY & FAULT TOLERANCE TESTS
+  console.log('>>> 5. ERROR BOUNDARY & FAULT TOLERANCE TESTS <<<');
+  const errorBoundaryTests = runErrorBoundaryTests();
+  for (const t of errorBoundaryTests) {
+    if (t.passed) {
+      console.log(`  ✅ [PASS] ${t.name}`);
+      console.log(`     ${t.details}`);
+      passedTotal++;
+    } else {
+      console.log(`  ❌ [FAIL] ${t.name}`);
+      console.log(`     ${t.details}`);
+      failedTotal++;
+    }
+  }
+  console.log('');
+
+  // 6. END-TO-END API & LIVE SERVICE INTEGRATION TESTS
+  console.log('>>> 6. END-TO-END API & LIVE SERVICE INTEGRATION TESTS <<<');
   const { runIntegrationTests } = await import('./integration.test');
   const integrationTests = await runIntegrationTests();
   for (const t of integrationTests) {

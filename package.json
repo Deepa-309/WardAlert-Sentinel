@@ -13,6 +13,7 @@
     "dev:frontend": "cd frontend && npm run dev",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "test": "ts-node tests/run_all_tests.ts",
+    "test:unit": "ts-node tests/run_unit_tests.ts",
     "build:backend": "cd backend && npm run build",
     "build:frontend": "cd frontend && npm run build",
     "build": "npm run build:backend && npm run build:frontend"
